@@ -1085,16 +1085,26 @@ exports.Code = class Code extends Base
           lit = new Literal ref.name.value + ' == null'
           val = new Assign new Value(param.name), param.value, '='
           exprs.push new If lit, val
-      vars.push ref unless splats
+      vars.push ref
     wasEmpty = @body.isEmpty()
     exprs.unshift splats if splats
     @body.expressions.unshift exprs... if exprs.length
-    o.scope.parameter vars[i] = v.compile o for v, i in vars unless splats
+    for v, i in vars
+      vc = v.compile o
+      o.scope.parameter vc unless splats
+      vc = "#{vc}..." if v.splat
+      vc = "#{if splats then '@' else '/*@*/'}#{vc}" if v.base?.asKey
+      if v.value
+        vvc = v.value.compile o
+        vc = "#{vc}#{if splats then " = #{vvc}" else "/* = #{vvc}*/"}" if v.value
+      vars[i] = vc
     @body.makeReturn() unless wasEmpty or @noReturn
     idt   = o.indent
     code  = 'function'
     code  += ' ' + @name if @ctor
-    code  += '(' + vars.join(', ') + ') {'
+    joined = vars.join ', '
+    joined = "/* #{joined} */" if splats
+    code  += '(' + joined + ') {'
     code  += "\n#{ @body.compileWithDeclarations o }\n#{@tab}" unless @body.isEmpty()
     code  += '}'
     return @tab + code if @ctor
