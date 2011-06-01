@@ -458,14 +458,20 @@ exports.Lexer = class Lexer
     return tokens if regex
     return @token 'STRING', '""' unless tokens.length
     tokens.unshift ['', ''] unless tokens[0][0] is 'NEOSTRING'
-    @token '(', '(' if interpolated = tokens.length > 1
+    @token '[', '[' if interpolated = tokens.length > 1
     for [tag, value], i in tokens
-      @token '+', '+' if i
+      @token ',', ',' if i
       if tag is 'TOKENS'
         @tokens.push value...
       else
         @token 'STRING', @makeString value, '"', heredoc
-    @token ')', ')' if interpolated
+    if interpolated
+      @token ']', ']'
+      @token '.', '.'
+      @token 'IDENTIFIER', 'join'
+      @token 'CALL_START', '('
+      @token 'STRING', '""'
+      @token 'CALL_END', ')'
     tokens
 
   # Helpers
