@@ -462,7 +462,11 @@ exports.Lexer = class Lexer
     for [tag, value], i in tokens
       @token '+', '+' if i
       if tag is 'TOKENS'
+        @token '(', '('
         @tokens.push value...
+        @token 'LOGIC', '?'
+        @token 'STRING', '""'
+        @token ')', ')'
       else
         @token 'STRING', @makeString value, '"', heredoc
     @token ')', ')' if interpolated
