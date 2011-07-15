@@ -1386,34 +1386,118 @@ exports.In = class In extends Base
 
 # A classic *try/catch/finally* block.
 exports.Try = class Try extends Base
-  constructor: (@attempt, @error, @recovery, @ensure) ->
+  constructor: (@attempt, @tail) ->
 
-  children: ['attempt', 'recovery', 'ensure']
+  children: ['attempt', 'tail']
 
   isStatement: YES
 
-  jumps: (o) -> @attempt.jumps(o) or @recovery?.jumps(o)
+  jumps: (o) -> @attempt.jumps(o) or @tail?.jumps(o)
 
   makeReturn: ->
-    @attempt  = @attempt .makeReturn() if @attempt
-    @recovery = @recovery.makeReturn() if @recovery
+    @attempt  = @attempt.makeReturn()
+    @tail = @tail.makeReturn() if @tail
     this
 
   # Compilation is more or less as you would expect -- the *finally* clause
   # is optional, the *catch* is not.
   compileNode: (o) ->
+    ind = o.indent
     o.indent  += TAB
-    errorPart = if @error then " (#{ @error.compile o }) " else ' '
-    catchPart = if @recovery
+    code = "#{@tab}try {\n#{ @attempt.compile o, LEVEL_TOP }\n#{@tab}}"
+    if @tail
+      o.indent = ind
+      code += @tail.compile o, LEVEL_TOP
+    else
+      code += " catch (_e) {}"
+    code
+
+#### SJS catch/retract/finally tail
+
+exports.TryTail = class TryTail extends Base
+  constructor: (@error, @_catch, @_retract, @_finally) -> 
+
+  children: ['_catch', '_retract', '_finally']
+
+  jumps: (o) -> @_catch?.jumps(o) or @_retract?.jumps(o)
+
+  makeReturn: ->
+    @_catch = @_catch.makeReturn() if @_catch
+    @_retract = @_retract.makeReturn() if @_retract
+    this
+
+  compileNode: (o) ->
+    o.indent += TAB
+    code = ""
+    if @_catch
       o.scope.add @error.value, 'param'
-      " catch#{errorPart}{\n#{ @recovery.compile o, LEVEL_TOP }\n#{@tab}}"
-    else unless @ensure or @recovery
-      ' catch (_e) {}'
-    """
-    #{@tab}try {
-    #{ @attempt.compile o, LEVEL_TOP }
-    #{@tab}}#{ catchPart or '' }
-    """ + if @ensure then " finally {\n#{ @ensure.compile o, LEVEL_TOP }\n#{@tab}}" else ''
+      code += "\n#{@tab}catch (#{ @error.compile o }) {\n#{ @_catch.compile o, LEVEL_TOP }\n#{@tab}}"
+    if @_retract
+      code += "\n#{@tab}retract {\n#{ @_retract.compile o, LEVEL_TOP }\n#{@tab}}"
+    if @_finally
+      code += "\n#{@tab}finally {\n#{ @_finally.compile o, LEVEL_TOP }\n#{@tab}}"
+    code
+
+#### SJS 'alt/par' combinators
+
+exports.AltPar = class AltPar extends Base
+  constructor: (@combinator, @blocks, @tail) -> 
+
+  children: ['blocks', 'tail']
+
+  isStatement: YES
+
+  jumps: (o) ->
+    for block in @blocks
+      return block if block.jumps o
+    @tail?.jumps(o)
+
+  makeReturn: ->
+    if @combinator == 'or'
+      @blocks = (block.makeReturn() for block in @blocks)
+      @tail = @tail.makeReturn() if @tail
+    # XXX for 'and' combinator, we have to accumulate results in an array
+    this
+
+  compileNode: (o) ->
+    ind = o.indent
+    o.indent += TAB
+    code = "#{@tab}waitfor "
+    code += ("{\n#{ block.compile o, LEVEL_TOP }\n#{@tab}}" for block in @blocks).join("\n#{@tab}#{@combinator} ")
+    if @tail
+      o.indent = ind
+      code += @tail.compile o, LEVEL_TOP
+    code
+
+#### SJS suspend
+
+exports.Suspend = class Suspend extends Base
+  constructor: (@rv, @block, @tail) ->
+
+  children: ['block', 'tail']
+
+  isStatement: YES
+
+  jumps: (o) -> @block.jumps(o) or @tail?.jumps(o)
+
+  makeReturn: ->
+    @block = block.makeReturn()
+    @tail = @tail.makeReturn() if @tail
+    this
+
+  compileNode: (o) ->
+    ind = o.indent
+    o.indent += TAB
+    code = "#{@tab}waitfor ("
+    if @rv
+      name = @rv.compile o
+      o.scope.add name, 'var'
+      code += name
+    code += ") {\n#{ @block.compile o, LEVEL_TOP }\n#{@tab}}"
+    if @tail
+      o.indent = ind
+      code += @tail.compile o, LEVEL_TOP
+    code
 
 #### Throw
 

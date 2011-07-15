@@ -1,4 +1,62 @@
 =
+
+First cut at a Stratified CoffeeScript compiler.
+================================================
+
+- Compiles to StratifiedJS (http://onilabs.com/stratifiedjs)
+
+- Supports the following constructs:
+
+Stratified CoffeeScript  -->     StratifiedJS
+-----------------------          ------------
+
+waitfor                  -->     waitfor () {
+  asyncFunc resume                 asyncFunc(resume)
+                                 }
+
+waitfor rv               -->     waitfor (rv) {
+  asyncFunc resume                 asyncFunc(resume)
+                                 }
+
+waitfor                  -->     waitfor {
+  foo a                            foo(a);
+then                             }
+  bar x                          and {
+                                   bar(x);
+                                 }
+
+waitfor                  -->     waitfor {
+  foo a                            foo(a);
+else                             }
+  bar x                          or {
+                                   bar(x);
+                                 }
+
+try                      -->     try {
+  foo a                            foo(a);
+retract                          }
+  cleanup a                      retract {
+                                   cleanup(a);
+                                 }
+
+- You can use catch/retract/finally also directly after waitfor, e.g.:
+
+waitfor                   -->   waitfor () {
+  id = setTimeout resume,         var id = setTimeout(resume,1000);
+         1000                   }
+retract                         retract {
+  cancelTimeout id                cancelTimeout(id);
+                                }
+
+- NOTE THE USE OF 'then' AND 'else' INSTEAD OF 'and'/'or'. Ideally we
+  would like 'and'/'or' also in CoffeeScript, but they are kinda hard to
+  parse, because CoffeeScript uses them for other stuff as well.
+
+
+
+ORIGINAL README CONTENTS:
+=========================
+
             {
          }   }   {
         {   {  }  }

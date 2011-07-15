@@ -94,6 +94,7 @@ grammar =
     o 'Assign'
     o 'If'
     o 'Try'
+    o 'Waitfor'
     o 'While'
     o 'For'
     o 'Switch'
@@ -369,17 +370,48 @@ grammar =
     o 'SimpleArgs , Expression',                -> [].concat $1, $3
   ]
 
-  # The variants of *try/catch/finally* exception handling blocks.
+  # The variants of *try/catch/finally + SJS's retract* exception handling blocks.
   Try: [
     o 'TRY Block',                              -> new Try $2
-    o 'TRY Block Catch',                        -> new Try $2, $3[0], $3[1]
-    o 'TRY Block FINALLY Block',                -> new Try $2, null, null, $4
-    o 'TRY Block Catch FINALLY Block',          -> new Try $2, $3[0], $3[1], $5
+    o 'TRY Block TryTail',                      -> new Try $2, $3
+  ]
+
+  TryTail: [
+    o 'Catch',                                  -> new TryTail $1[0], $1[1]
+    o 'RETRACT Block',                          -> new TryTail null, null, $2
+    o 'FINALLY Block',                          -> new TryTail null, null, null, $2
+    o 'Catch RETRACT Block',                    -> new TryTail $1[0], $1[1], $3
+    o 'Catch FINALLY Block',                    -> new TryTail $1[0], $1[1], null, $3
+    o 'RETRACT Block FINALLY Block',            -> new TryTail null, null, $2, $4
+    o 'Catch RETRACT Block FINALLY Block',      -> new TryTail $1[0], $1[1], $3, $5
   ]
 
   # A catch clause names its error and runs a block of code.
   Catch: [
     o 'CATCH Identifier Block',                 -> [$2, $3]
+  ]
+
+  # StratifiedJS composition & suspend
+  Waitfor: [
+    o 'WAITFOR Alt',                            -> new AltPar 'or',  $2
+    o 'WAITFOR Alt TryTail',                    -> new AltPar 'or',  $2, $3
+    o 'WAITFOR Par',                            -> new AltPar 'and', $2
+    o 'WAITFOR Par TryTail',                    -> new AltPar 'and', $2, $3
+    o 'WAITFOR Block',                          -> new Suspend null, $2
+    o 'WAITFOR Identifier Block',               -> new Suspend $2, $3
+    o 'WAITFOR Block TryTail',                  -> new Suspend null, $2, $3
+    o 'WAITFOR Identifier Block TryTail',       -> new Suspend $2, $3, $4
+  ]
+
+
+  Alt: [
+    o 'Block ELSE Block',                       -> [ $1, $3 ]
+    o 'Block ELSE Alt',                         -> [ $1 ].concat $3
+  ]
+
+  Par: [
+    o 'Block THEN Block',                       -> [ $1, $3 ]
+    o 'Block THEN Par',                         -> [ $1 ].concat $3
   ]
 
   # Throw an exception object.

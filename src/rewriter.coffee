@@ -304,7 +304,7 @@ for [left, rite] in BALANCED_PAIRS
   EXPRESSION_END  .push INVERSES[left] = rite
 
 # Tokens that indicate the close of a clause of an expression.
-EXPRESSION_CLOSE = ['CATCH', 'WHEN', 'ELSE', 'FINALLY'].concat EXPRESSION_END
+EXPRESSION_CLOSE = ['CATCH', 'WHEN', 'ELSE', 'FINALLY', 'RETRACT'].concat EXPRESSION_END
 
 # Tokens that, if followed by an `IMPLICIT_CALL`, indicate a function invocation.
 IMPLICIT_FUNC    = ['IDENTIFIER', 'SUPER', ')', 'CALL_END', ']', 'INDEX_END', '@', 'THIS']
@@ -326,8 +326,8 @@ IMPLICIT_END     = ['POST_IF', 'FOR', 'WHILE', 'UNTIL', 'WHEN', 'BY', 'LOOP', 'T
 
 # Single-line flavors of block expressions that have unclosed endings.
 # The grammar can't disambiguate them, so we insert the implicit indentation.
-SINGLE_LINERS    = ['ELSE', '->', '=>', 'TRY', 'FINALLY', 'THEN']
-SINGLE_CLOSERS   = ['TERMINATOR', 'CATCH', 'FINALLY', 'ELSE', 'OUTDENT', 'LEADING_WHEN']
+SINGLE_LINERS    = ['ELSE', '->', '=>', 'TRY', 'FINALLY', 'RETRACT', 'THEN']
+SINGLE_CLOSERS   = ['TERMINATOR', 'CATCH', 'FINALLY', 'RETRACT', 'ELSE', 'OUTDENT', 'LEADING_WHEN']
 
 # Tokens that end a line.
 LINEBREAKS       = ['TERMINATOR', 'INDENT', 'OUTDENT']

@@ -84,7 +84,7 @@ exports.Lexer = class Lexer
       not prev.spaced and prev[0] is '@')
     tag = 'IDENTIFIER'
 
-    if not forcedIdentifier and (id in JS_KEYWORDS or id in COFFEE_KEYWORDS)
+    if not forcedIdentifier and (id in JS_KEYWORDS or id in SJS_KEYWORDS or id in COFFEE_KEYWORDS)
       tag = id.toUpperCase()
       if tag is 'WHEN' and @tag() in LINE_BREAK
         tag = 'LEADING_WHEN'
@@ -516,6 +516,10 @@ JS_KEYWORDS = [
   'class', 'extends', 'super'
 ]
 
+SJS_KEYWORDS = [
+  'waitfor', 'retract'
+]
+
 # CoffeeScript-only keywords.
 COFFEE_KEYWORDS = ['undefined', 'then', 'unless', 'until', 'loop', 'of', 'by', 'when']
 
@@ -544,9 +548,9 @@ RESERVED = [
 
 # The superset of both JavaScript keywords and reserved words, none of which may
 # be used as identifiers or properties.
-JS_FORBIDDEN = JS_KEYWORDS.concat RESERVED
+JS_FORBIDDEN = JS_KEYWORDS.concat(SJS_KEYWORDS).concat(RESERVED)
 
-exports.RESERVED = RESERVED.concat(JS_KEYWORDS).concat(COFFEE_KEYWORDS)
+exports.RESERVED = RESERVED.concat(JS_KEYWORDS).concat(SJS_KEYWORDS).concat(COFFEE_KEYWORDS)
 
 # Token matching regexes.
 IDENTIFIER = /// ^

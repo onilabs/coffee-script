@@ -8,7 +8,7 @@
 
 fs               = require 'fs'
 path             = require 'path'
-{Script}         = require 'vm'
+{Script}         = ((require 'vm') or {})
 Module           = require 'module'
 {Lexer,RESERVED} = require './lexer'
 {parser}         = require './parser'
