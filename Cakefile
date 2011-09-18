@@ -1,6 +1,6 @@
 fs            = require 'fs'
 path          = require 'path'
-{extend}      = require './lib/helpers'
+{extend}      = require './lib/coffee-script/helpers'
 CoffeeScript  = require './lib/coffee-script'
 {spawn, exec} = require 'child_process'
 
@@ -22,16 +22,17 @@ header = """
 """
 
 sources = [
-  'src/coffee-script.coffee', 'src/grammar.coffee'
-  'src/helpers.coffee', 'src/lexer.coffee', 'src/nodes.coffee'
-  'src/rewriter.coffee', 'src/scope.coffee'
-]
+  'coffee-script', 'grammar', 'helpers'
+  'lexer', 'nodes', 'rewriter', 'scope'
+].map (filename) -> "src/#{filename}.coffee"
 
 # Run a CoffeeScript through our node/coffee interpreter.
-run = (args) ->
+run = (args, cb) ->
   proc =         spawn 'bin/coffee', args
   proc.stderr.on 'data', (buffer) -> console.log buffer.toString()
-  proc.on        'exit', (status) -> process.exit(1) if status != 0
+  proc.on        'exit', (status) ->
+    process.exit(1) if status != 0
+    cb() if typeof cb is 'function'
 
 # Log a message with a color.
 log = (message, color, explanation) ->
@@ -53,30 +54,32 @@ task 'install', 'install CoffeeScript into /usr/local (or --prefix)', (options) 
     "ln -sfn #{lib}/bin/coffee #{bin}/coffee"
     "ln -sfn #{lib}/bin/cake #{bin}/cake"
     "mkdir -p ~/.node_libraries"
-    "ln -sfn #{lib}/lib #{node}"
+    "ln -sfn #{lib}/lib/coffee-script #{node}"
   ].join(' && '), (err, stdout, stderr) ->
     if err then console.log stderr.trim() else log 'done', green
   )
 
 
-task 'build', 'build the CoffeeScript language from source', ->
+task 'build', 'build the CoffeeScript language from source', build = (cb) ->
   files = fs.readdirSync 'src'
   files = ('src/' + file for file in files when file.match(/\.coffee$/))
-  run ['-c', '-o', 'lib'].concat(files)
+  run ['-c', '-o', 'lib/coffee-script'].concat(files), cb
 
 
 task 'build:full', 'rebuild the source twice, and run the tests', ->
-  exec 'bin/cake build && bin/cake build && bin/cake test', (err, stdout, stderr) ->
-    console.log stdout.trim() if stdout
-    console.log stderr.trim() if stderr
-    throw err    if err
+  build ->
+    build ->
+      csPath = './lib/coffee-script'
+      delete require.cache[require.resolve csPath]
+      unless runTests require csPath
+        process.exit 1
 
 
 task 'build:parser', 'rebuild the Jison parser (run build first)', ->
   extend global, require('util')
   require 'jison'
-  parser = require('./lib/grammar').parser
-  fs.writeFile 'lib/parser.js', parser.generate()
+  parser = require('./lib/coffee-script/grammar').parser
+  fs.writeFile 'lib/coffee-script/parser.js', parser.generate()
 
 
 task 'build:ultraviolet', 'build and install the Ultraviolet syntax highlighter', ->
@@ -91,7 +94,7 @@ task 'build:browser', 'rebuild the merged script for inclusion in the browser', 
     code += """
       require['./#{name}'] = new function() {
         var exports = this;
-        #{fs.readFileSync "lib/#{name}.js"}
+        #{fs.readFileSync "lib/coffee-script/#{name}.js"}
       };
     """
   code = """
@@ -124,7 +127,7 @@ task 'doc:underscore', 'rebuild the Underscore.coffee documentation page', ->
     throw err if err
 
 task 'bench', 'quick benchmark of compilation time', ->
-  {Rewriter} = require './lib/rewriter'
+  {Rewriter} = require './lib/coffee-script/rewriter'
   co     = sources.map((name) -> fs.readFileSync name).join '\n'
   fmt    = (ms) -> " #{bold}#{ "   #{ms}".slice -4 }#{reset} ms"
   total  = 0
@@ -175,7 +178,7 @@ runTests = (CoffeeScript) ->
     catch e
       e.description = description if description?
       e.source      = fn.toString() if fn.toString?
-      failures.push file: currentFile, error: e
+      failures.push filename: currentFile, error: e
 
   # A recursive functional equivalence helper; uses egal for testing equivalence.
   # See http://wiki.ecmascript.org/doku.php?id=harmony:egal
@@ -201,27 +204,28 @@ runTests = (CoffeeScript) ->
     return log(message, green) unless failures.length
     log "failed #{failures.length} and #{message}", red
     for fail in failures
-      {error, file}      = fail
-      jsFile             = file.replace(/\.coffee$/,'.js')
+      {error, filename}  = fail
+      jsFilename         = filename.replace(/\.coffee$/,'.js')
       match              = error.stack?.match(new RegExp(fail.file+":(\\d+):(\\d+)"))
       match              = error.stack?.match(/on line (\d+):/) unless match
       [match, line, col] = match if match
-      log "\n  #{error.toString()}", red
+      console.log ''
       log "  #{error.description}", red if error.description
-      log "  #{jsFile}: line #{line or 'unknown'}, column #{col or 'unknown'}", red
+      log "  #{error.stack}", red
+      log "  #{jsFilename}: line #{line ? 'unknown'}, column #{col ? 'unknown'}", red
       console.log "  #{error.source}" if error.source
+    return
 
   # Run every test in the `test` folder, recording failures.
-  fs.readdir 'test', (err, files) ->
-    files.forEach (file) ->
-      return unless file.match(/\.coffee$/i)
-      filename = path.join 'test', file
-      fs.readFile filename, (err, code) ->
-        currentFile = filename
-        try
-          CoffeeScript.run code.toString(), {filename}
-        catch e
-          failures.push file: currentFile, error: e
+  files = fs.readdirSync 'test'
+  for file in files when file.match /\.coffee$/i
+    currentFile = filename = path.join 'test', file
+    code = fs.readFileSync filename
+    try
+      CoffeeScript.run code.toString(), {filename}
+    catch error
+      failures.push {filename, error}
+  return !failures.length
 
 
 task 'test', 'run the CoffeeScript language test suite', ->

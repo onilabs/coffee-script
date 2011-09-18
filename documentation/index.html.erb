@@ -64,7 +64,7 @@
         <a href="#regexes">Extended Regular Expressions</a>
         <a href="#cake">Cake, and Cakefiles</a>
         <a href="#scripts">"text/coffeescript" Script Tags</a>
-        <a href="#resources">Examples and Resources</a>
+        <a href="#resources">Books, Screencasts, Examples and Resources</a>
         <a href="#change_log">Change Log</a>
       </div>
     </div>
@@ -131,7 +131,7 @@
 
     <p>
       <b>Latest Version:</b>
-      <a href="http://github.com/jashkenas/coffee-script/tarball/1.1.1">1.1.1</a>
+      <a href="http://github.com/jashkenas/coffee-script/tarball/1.1.2">1.1.2</a>
     </p>
 
     <h2>
@@ -842,7 +842,7 @@ Expressions
       indentation level that begins the heredoc is maintained throughout, so
       you can keep it all aligned with the body of your code.
     </p>
-    <%= code_for('heredocs') %>
+    <%= code_for('heredocs', 'html') %>
     <p>
       Double-quoted heredocs, like double-quoted strings, allow interpolation.
     </p>
@@ -872,13 +872,13 @@ Expressions
     </h2>
 
     <p>
-      CoffeeScript includes a simple build system similar to
+      CoffeeScript includes a (very) simple build system similar to
       <a href="http://www.gnu.org/software/make/">Make</a> and
       <a href="http://rake.rubyforge.org/">Rake</a>. Naturally,
-      it's called Cake, and is used for the build and test tasks for the CoffeeScript
+      it's called Cake, and is used for the tasks that build and test the CoffeeScript
       language itself. Tasks are defined in a file named <tt>Cakefile</tt>, and
-      can be invoked by running <tt>cake taskname</tt> from within the directory.
-      To print a list of all the tasks and options, just run <tt>cake</tt>.
+      can be invoked by running <tt>cake [task]</tt> from within the directory.
+      To print a list of all the tasks and options, just type <tt>cake</tt>.
     </p>
 
     <p>
@@ -893,7 +893,11 @@ Expressions
     <p>
       If you need to invoke one task before another &mdash; for example, running
       <tt>build</tt> before <tt>test</tt>, you can use the <tt>invoke</tt> function:
-      <tt>invoke 'build'</tt>
+      <tt>invoke 'build'</tt>. Cake tasks are a minimal way to expose your
+      CoffeeScript functions to the command line, so
+      <a href="documentation/docs/cake.html">don't expect any fanciness built-in</a>.
+      If you need dependencies, or async callbacks, it's best to put them in your
+      code itself &mdash; not the cake task.
     </p>
 
     <h2>
@@ -926,6 +930,51 @@ Expressions
 
     <h2>
       <span id="resources" class="bookmark"></span>
+      Books and Screencasts
+    </h2>
+    
+    <p>
+      There are a number of excellent books and screencasts to help you get 
+      started with CoffeeScript, some of which are freely available online.
+    </p>
+    
+    <ul>
+      <li>
+        <a href="http://arcturo.github.com/library/coffeescript/">The Little Book on CoffeeScript</a>
+        is a brief 5-chapter introduction to CoffeeScript, written with great
+        clarity and precision by 
+        <a href="http://alexmaccaw.co.uk/">Alex MacCaw</a>.
+      </li>
+      <li>
+        <a href="http://autotelicum.github.com/Smooth-CoffeeScript/">Smooth CoffeeScript</a>
+        is a reimagination of the excellent book
+        <a href="http://eloquentjavascript.net/">Eloquent JavaScript</a>, as if
+        it had been written in CoffeeScript instead. Covers language features
+        as well a the functional and object oriented programming styles. By
+        <a href="https://github.com/autotelicum">E. Hoigaard</a>.
+      </li>
+      <li>
+        <a href="http://pragprog.com/book/tbcoffee/coffeescript">CoffeeScript: Accelerated JavaScript Development</a>
+        is <a href="http://trevorburnham.com/">Trevor Burnham</a>'s thorough 
+        introduction to the language. By the end of the book, you'll have built
+        a fast-paced multiplayer word game, writing both the client-side and Node.js
+        portions in CoffeeScript.
+      </li>
+      <li>
+        <a href="http://peepcode.com/products/coffeescript">Meet CoffeeScript</a>
+        is a 75-minute long screencast by <a href="http://peepcode.com/">PeepCode</a>.
+        Highly memorable for its animations which demonstrate transforming CoffeeScript
+        into the equivalent JS.
+      </li>
+      <li>
+        If you're looking for less of a time commitment, RailsCasts'
+        <a href="http://railscasts.com/episodes/267-coffeescript-basics">CoffeeScript Basics</a>
+        should have you covered, hitting all of the important notes about CoffeeScript
+        in 11 minutes.
+      </li>
+    </ul>
+    
+    <h2>
       Examples
     </h2>
 
@@ -1021,6 +1070,20 @@ Expressions
       <span id="change_log" class="bookmark"></span>
       Change Log
     </h2>
+    
+    <p>
+      <b class="header" style="margin-top: 20px;">
+        <a href="https://github.com/jashkenas/coffee-script/compare/1.1.1...1.1.2">1.1.2</a>
+        <span class="timestamp"> &ndash; <small>August 4, 2011</small></span>
+      </b>
+      Fixes for block comment formatting, <tt>?=</tt> compilation, implicit calls
+      against control structures, implicit invocation of a try/catch block,
+      variadic arguments leaking from local scope, line numbers in syntax errors
+      following heregexes, property access on parenthesized number literals,
+      bound class methods and super with reserved names, a REPL overhaul, 
+      consecutive compiled semicolons, block comments in implicitly called objects,
+      and a Chrome bug.
+    </p>
     
     <p>
       <b class="header" style="margin-top: 20px;">1.1.1
